@@ -1,128 +1,253 @@
-name: Visual Regression Test
+name: visual-regression-test
 on:
-  push:
-    branches:
-      - ci/**
   pull_request:
-    branches-ignore:
-      - ci/**
-    types:
-      - opened
-      - synchronize
-      - reopened
+    branches:
+      - main
+defaults:
+  run:
+    shell: bash
+    # PRが作成・更新・再オープンされた場合にVRTを実行する。ただしci/**ブランチは無視する。
+    # これにより、機能開発ブランチや修正ブランチの変更をPR経由でメインブランチと比較し、
+    # 視覚的差分がないかを自動でチェックできる。
 
 jobs:
-  prepare:
-    name: Prepare main branch screenshots
+  check_expected_screenshots:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
-      - name: setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: setup pnpm
-        run: corepack enable
-
-      - name: checkout main branch
-        uses: actions/checkout@v3
+      - uses: volta-cli/action@v4
+      - uses: actions/checkout@v3
         with:
           ref: main
           fetch-depth: 0
 
-      - name: check commit hash
-        id: commithash
-        run: echo "::set-output name=hash::$(git rev-parse HEAD)"
-
-      - name: restore pnpm cache
-        uses: actions/cache@v2
+      - name: restore cached expected screenshots
+        id: screenshots_cache
+        uses: ./.github/actions/cache-screenshots
         with:
-          path: |
-            node_modules/.pnpm
-            node_modules
-          key: reg-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}-v1
+          lookup-only: 'true'
 
-      - name: restore reg-suit screenshots
-        uses: actions/cache@v2
-        with:
-          path: .reg/
-          key: reg-${{ steps.commithash.outputs.hash }}-v7
+      - name: restore cached node_modules
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+        uses: ./.github/actions/cache-node-modules
 
-      - name: Check file existence
-        id: check_files
-        uses: andstor/file-existence-action@v1
-        with:
-          files: ".reg/"
+      - name: cache storybook build result
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+        id: storybook_result_cache
+        uses: ./.github/actions/cache-storybook-build-result
 
-      - name: pnpm install main branch
-        if: steps.check_files.outputs.files_exists == 'false'
-        run: pnpm install --frozen-lockfile
+      - name: storybook build
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' && steps.storybook_result_cache.outputs.cache-hit != 'true' }}
+        run: yarn storybook:build
+        env:
+          NEXT_IS_TEST: 'true'
 
-      - name: screenshots main branch
-        if: steps.check_files.outputs.files_exists == 'false'
-        run: pnpm run ci:screenshot
-
-      - name: run reg-suit main branch
-        if: steps.check_files.outputs.files_exists == 'false'
-        run: pnpm run ci:reg-suit
-
-      - name: set reg-suit expected
-        if: steps.check_files.outputs.files_exists == 'false'
-        run: |
-          rm -rf .reg/expected/
-          mv -f .reg/actual/ .reg/expected/
-          mkdir .reg/actual/
-          ls -l .reg/
-
-      - name: upload .reg/
-        uses: actions/upload-artifact@v2
-        with:
-          name: reg-expected
-          path: .reg/
-
-  run:
-    name: Run reg-suit
-    needs: prepare
+  take_expected_screenshots:
+    needs: check_expected_screenshots
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        shard: [1/4, 2/4, 3/4, 4/4]
+
     steps:
-      - name: checkout
-        uses: actions/checkout@v3
+      - uses: volta-cli/action@v4
+      - uses: actions/checkout@v3
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: restore cached expected screenshots
+        id: screenshots_cache
+        uses: ./.github/actions/cache-screenshots
+        with:
+          lookup-only: 'false'
+
+      - name: restore cached node_modules
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+        uses: ./.github/actions/cache-node-modules
+
+      - name: cache storybook build result
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+        id: storybook_result_cache
+        uses: ./.github/actions/cache-storybook-build-result
+
+      # - name: prepare for screenshots
+      #   if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+      #   uses: ./.github/actions/prepare-screenshots
+
+      - name: take screenshots
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+        run: yarn storybook:screenshot --shard=${{ matrix.shard }}
+
+      - name: upload screenshots
+        uses: actions/upload-artifact@v3
+        with:
+          name: expected-screenshots
+          path: __screenshots__
+          retention-days: 1
+
+  check_actual_screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: volta-cli/action@v4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: setup pnpm
-        run: corepack enable
-
       - name: workaround for detached HEAD
-        if: ${{ github.event_name == 'pull_request' }}
         run: |
           git checkout ${GITHUB_HEAD_REF#refs/heads/} || git checkout -b ${GITHUB_HEAD_REF#refs/heads/} && git pull
 
-      - name: restore pnpm cache
-        uses: actions/cache@v2
+      - name: restore cached actual screenshots
+        id: screenshots_cache
+        uses: ./.github/actions/cache-screenshots
         with:
-          path: |
-            node_modules/.pnpm
-            node_modules
-          key: pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}-v1
+          lookup-only: 'true'
 
-      - name: pnpm install
-        run: pnpm install --frozen-lockfile
+      - name: restore cached node_modules
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+        uses: ./.github/actions/cache-node-modules
 
-      - name: load reg-suit expecteds
-        uses: actions/download-artifact@v2
+      - name: cache storybook build result
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+        id: storybook_result_cache
+        uses: ./.github/actions/cache-storybook-build-result
+
+      - name: storybook build
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' && steps.storybook_result_cache.outputs.cache-hit != 'true' }}
+        run: yarn storybook:build
+        env:
+          NEXT_IS_TEST: 'true'
+
+  take_actual_screenshots:
+    needs: check_actual_screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        shard: [1/4, 2/4, 3/4, 4/4]
+
+    steps:
+      - uses: volta-cli/action@v4
+      - uses: actions/checkout@v3
         with:
-          name: reg-expected
-          path: .reg/
+          fetch-depth: 0
 
-      - name: screenshots
-        run: pnpm run ci:screenshot
+      - name: workaround for detached HEAD
+        run: |
+          git checkout ${GITHUB_HEAD_REF#refs/heads/} || git checkout -b ${GITHUB_HEAD_REF#refs/heads/} && git pull
 
+      - name: restore cached actual screenshots
+        id: screenshots_cache
+        uses: ./.github/actions/cache-screenshots
+        with:
+          lookup-only: 'false'
+
+      - name: restore cached node_modules
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+        uses: ./.github/actions/cache-node-modules
+
+      - name: cache storybook build result
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+        id: storybook_result_cache
+        uses: ./.github/actions/cache-storybook-build-result
+
+      - name: prepare for screenshots
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+        uses: ./.github/actions/prepare-screenshots
+
+      - name: take screenshots
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+        run: yarn storybook:screenshot --shard=${{ matrix.shard }}
+
+      - name: upload screenshots
+        uses: actions/upload-artifact@v3
+        with:
+          name: actual-screenshots
+          path: __screenshots__
+          retention-days: 1
+
+  run_reg_suit:
+    needs:
+      - take_expected_screenshots
+      - take_actual_screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: volta-cli/action@v4
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+        # cacheから参照スナップショットを取得
+      - name: restore cached expected screenshots
+        id: screenshots_cache
+        uses: ./.github/actions/cache-screenshots
+        with:
+          lookup-only: 'false'
+
+        # cacheにない場合はArtifactsから参照スナップショットを取得
+      - name: download expected screenshots
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+        uses: actions/download-artifact@v3
+        with:
+          name: expected-screenshots
+          path: __screenshots__
+
+        # 取得した参照スナップショットを参照用画像群に移動
+      - name: set reg-suit expected
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+        run: |
+          rm -rf .reg/expected/
+          mkdir -p .reg/expected
+          mv -f __screenshots__/* .reg/expected/
+          ls -l .reg/
+
+        # Artifactsからテスト対象スナップショットを取得
+      - name: download actual screenshots
+        uses: actions/download-artifact@v3
+        with:
+          name: actual-screenshots
+          path: __screenshots__
+
+      - name: restore cached node_modules
+        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+        uses: ./.github/actions/cache-node-modules
+
+      - name: workaround for detached HEAD
+        run: |
+          git checkout ${GITHUB_HEAD_REF#refs/heads/} || git checkout -b ${GITHUB_HEAD_REF#refs/heads/} && git pull
+
+        # VRT実行
       - name: run reg-suit
-        run: pnpm run ci:reg-suit
+        run: yarn test:vrt
 
-      - name: upload reg-suit
-        uses: actions/upload-artifact@v2
+        # GitHub Page公開元ブランチへレポートをpush
+      - name: deploy report to github page
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          name: visual regression test result
-          path: .reg/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .reg/
+          destination_dir: ${{ github.head_ref  }} # PR毎にディレクトリを分けることで上書きを防ぐ
+
+      - name: find comment
+        uses: peter-evans/find-comment@v2
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: reg-suit report
+
+      - name: upsert comment
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            reg-suit report
+            https://tacrew.github.io/vrt-with-github-sample/${{github.head_ref}}
+          edit-mode: replace

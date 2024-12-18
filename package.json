@@ -2,7 +2,12 @@
   "name": "@nx-workspace/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "storybook:build": "storybook build --config-dir apps/my-new-app/.storybook",
+    "storybook:dev": "storybook dev -p 6006 --config-dir apps/my-new-app/.storybook",
+    "storybook:screenshot": "storycap http://localhost:6006 --serverTimeout 60000 --captureTimeout 10000 --serverCmd 'pnpm storybook:dev'",
+    "test:vrt": "reg-suit run"
+  },
   "private": true,
   "dependencies": {
     "next": "14.2.16",
