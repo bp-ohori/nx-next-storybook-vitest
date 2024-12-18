@@ -10,6 +10,11 @@ runs:
         node-version: 21
         cache: "pnpm"
         cache-dependency-path: pnpm-lock.yaml
+
+    - uses: pnpm/action-setup@v2.2.2
+      with:
+        version: 9.15.0
+
     # キャッシュされたnode_modulesを取得する
     - name: Restore node_modules Cache
       id: node_modules_cache
