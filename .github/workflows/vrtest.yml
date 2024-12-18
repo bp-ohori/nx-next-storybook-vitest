@@ -73,9 +73,9 @@ jobs:
         id: storybook_result_cache
         uses: ./.github/actions/cache-storybook-build-result
 
-      - name: prepare for screenshots
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        uses: ./.github/actions/prepare-screenshots
+      # - name: prepare for screenshots
+      #   if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
+      #   uses: ./.github/actions/prepare-screenshots
 
       - name: take screenshots
         if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
