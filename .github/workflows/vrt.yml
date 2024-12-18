@@ -1,0 +1,149 @@
+name: visual-regression-test
+on:
+  pull_request:
+    branches:
+      - main
+defaults:
+  run:
+    shell: bash
+    # PRが作成・更新・再オープンされた場合にVRTを実行する。ただしci/**ブランチは無視する。
+    # これにより、機能開発ブランチや修正ブランチの変更をPR経由でメインブランチと比較し、
+    # 視覚的差分がないかを自動でチェックできる。
+
+jobs:
+  take_expected_screenshots:
+    name: Take Expected Screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          ref: main # mainブランチのスクショをVRTの正の画像とする
+
+      - name: Restore cached expected screenshots # キャッシュに保存されたスクショがあったら再利用する
+        id: expected_screenshots_cache
+        uses: ./.github/composite_actions/cache-screenshots
+
+      - name: Client setup
+        if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
+        uses: ./.github/composite_actions/client-setup
+
+      - name: Restore or build storybook # キャッシュにスクショが保存されてなかったらStorybookをビルドしてスクショ撮影する
+        if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
+        uses: ./.github/composite_actions/cache-storybook-static
+
+      - name: Install Chrome for puppeteer
+        if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
+        run: npx puppeteer browsers install chrome
+
+      - name: Take expected screenshots
+        if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
+        run: npm run storycap
+
+      - name: Upload expected screenshots to artifact # 他のstepでスクショを使うのでartifactにアップする
+        uses: actions/upload-artifact@v4
+        with:
+          name: expected-screenshots
+          path: __screenshots__
+          retention-days: 1
+
+  take_actual_screenshots:
+    name: Take Actual Screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Client setup
+        uses: ./.github/composite_actions/client-setup
+
+      - name: Workaround for detached HEAD
+        run: |
+          git checkout ${GITHUB_HEAD_REF#refs/heads/} || git checkout -b ${GITHUB_HEAD_REF#refs/heads/} && git pull
+
+      - name: Build Storybook
+        run: npm run build-storybook
+
+      - name: Install Chrome for puppeteer
+        run: npx puppeteer browsers install chrome
+
+      - name: Take actual screenshots
+        run: npm run storycap
+
+      - name: Upload actual screenshots to artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: actual-screenshots
+          path: __screenshots__
+          retention-days: 1
+
+  compare_screenshots:
+    name: Compare Screenshots
+    needs:
+      - take_expected_screenshots
+      - take_actual_screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out code
+        if: ${{ github.event_name != 'pull_request_target' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check out PR
+        if: ${{ github.event_name == 'pull_request_target' }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Client setup
+        uses: ./.github/composite_actions/client-setup
+
+      - name: Download expected screenshots from artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: expected-screenshots
+          path: .reg/expected/
+
+      - name: Download actual screenshots from artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: actual-screenshots
+          path: __screenshots__
+
+      - name: Workaround for detached HEAD
+        run: git checkout ${GITHUB_HEAD_REF#refs/heads/} || git checkout -b ${GITHUB_HEAD_REF#refs/heads/} && git pull
+
+      - name: Compare Screenshots
+        run: npm run reg-suit
+
+      - name: Deploy VRT report to github page
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .reg/
+          destination_dir: ${{ github.head_ref }}/vrt-report
+
+      - name: Find comment
+        uses: peter-evans/find-comment@v3
+        id: find_comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: reg-suit report
+
+      - name: Comment VRT report URL
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find_comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            reg-suit report
+            https://bp-ohori.github.io/nx-next-storybook-vitest/${{github.head_ref}}/vrt-report
+          edit-mode: replace

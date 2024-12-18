@@ -6,9 +6,6 @@ on:
 defaults:
   run:
     shell: bash
-    # PRが作成・更新・再オープンされた場合にVRTを実行する。ただしci/**ブランチは無視する。
-    # これにより、機能開発ブランチや修正ブランチの変更をPR経由でメインブランチと比較し、
-    # 視覚的差分がないかを自動でチェックできる。
 
 jobs:
   check_expected_screenshots:
@@ -39,7 +36,7 @@ jobs:
 
       - name: storybook build
         if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' && steps.storybook_result_cache.outputs.cache-hit != 'true' }}
-        run: yarn storybook:build
+        run: pnpm run storybook:build
         env:
           NEXT_IS_TEST: 'true'
 
@@ -73,13 +70,9 @@ jobs:
         id: storybook_result_cache
         uses: ./.github/actions/cache-storybook-build-result
 
-      # - name: prepare for screenshots
-      #   if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-      #   uses: ./.github/actions/prepare-screenshots
-
       - name: take screenshots
         if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        run: yarn storybook:screenshot --shard=${{ matrix.shard }}
+        run: pnpm run storybook:screenshot --shard=${{ matrix.shard }}
 
       - name: upload screenshots
         uses: actions/upload-artifact@v3
@@ -118,7 +111,7 @@ jobs:
 
       - name: storybook build
         if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' && steps.storybook_result_cache.outputs.cache-hit != 'true' }}
-        run: yarn storybook:build
+        run: pnpm run storybook:build
         env:
           NEXT_IS_TEST: 'true'
 
@@ -155,13 +148,9 @@ jobs:
         id: storybook_result_cache
         uses: ./.github/actions/cache-storybook-build-result
 
-      # - name: prepare for screenshots
-      #   if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-      #   uses: ./.github/actions/prepare-screenshots
-
       - name: take screenshots
         if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        run: yarn storybook:screenshot --shard=${{ matrix.shard }}
+        run: pnpm run storybook:screenshot --shard=${{ matrix.shard }}
 
       - name: upload screenshots
         uses: actions/upload-artifact@v3
@@ -183,14 +172,12 @@ jobs:
         with:
           fetch-depth: 0
 
-        # cacheから参照スナップショットを取得
       - name: restore cached expected screenshots
         id: screenshots_cache
         uses: ./.github/actions/cache-screenshots
         with:
           lookup-only: 'false'
 
-        # cacheにない場合はArtifactsから参照スナップショットを取得
       - name: download expected screenshots
         if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
         uses: actions/download-artifact@v3
@@ -198,7 +185,6 @@ jobs:
           name: expected-screenshots
           path: __screenshots__
 
-        # 取得した参照スナップショットを参照用画像群に移動
       - name: set reg-suit expected
         if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
         run: |
@@ -207,7 +193,6 @@ jobs:
           mv -f __screenshots__/* .reg/expected/
           ls -l .reg/
 
-        # Artifactsからテスト対象スナップショットを取得
       - name: download actual screenshots
         uses: actions/download-artifact@v3
         with:
@@ -222,17 +207,15 @@ jobs:
         run: |
           git checkout ${GITHUB_HEAD_REF#refs/heads/} || git checkout -b ${GITHUB_HEAD_REF#refs/heads/} && git pull
 
-        # VRT実行
       - name: run reg-suit
-        run: yarn test:vrt
+        run: pnpm run test:vrt
 
-        # GitHub Page公開元ブランチへレポートをpush
       - name: deploy report to github page
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .reg/
-          destination_dir: ${{ github.head_ref  }} # PR毎にディレクトリを分けることで上書きを防ぐ
+          destination_dir: ${{ github.head_ref  }}
 
       - name: find comment
         uses: peter-evans/find-comment@v2
