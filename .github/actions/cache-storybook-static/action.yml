@@ -19,5 +19,4 @@ runs:
     - name: Build Storybook
       if: ${{ steps.storybook_cache.outputs.cache-hit != 'true' }}
       run: pnpm storybook:build
-      working-directory: client
       shell: bash
