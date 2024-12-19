@@ -41,6 +41,6 @@ export const Small: Story = {
 export const LongText: Story = {
     args :{
     size: 'small',
-    label: 'ButtonButtonButtonButtonButtonButton',
+    label: 'ButtonB',
     },
 };
