@@ -6,7 +6,6 @@ on:
 defaults:
   run:
     shell: bash
-    # PRが作成・更新・再オープンされた場合にVRTを実行する。ただしci/**ブランチは無視する。
     # これにより、機能開発ブランチや修正ブランチの変更をPR経由でメインブランチと比較し、
     # 視覚的差分がないかを自動でチェックできる。
 
@@ -33,13 +32,13 @@ jobs:
         if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
         uses: ./.github/actions/cache-storybook-static
 
-      - name: Install Chrome for puppeteer
-        if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
-        run: npx puppeteer browsers install chrome
+      # - name: Install Chrome for puppeteer
+      #   if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
+      #   run: npx puppeteer browsers install chrome
 
       - name: Take expected screenshots
         if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
-        run: npm run storycap
+        run: pnpm storybook:screenshot
 
       - name: Upload expected screenshots to artifact # 他のstepでスクショを使うのでartifactにアップする
         uses: actions/upload-artifact@v4
@@ -66,13 +65,13 @@ jobs:
           git checkout ${GITHUB_HEAD_REF#refs/heads/} || git checkout -b ${GITHUB_HEAD_REF#refs/heads/} && git pull
 
       - name: Build Storybook
-        run: npm run build-storybook
+        run: pnpm storybook:build
 
-      - name: Install Chrome for puppeteer
-        run: npx puppeteer browsers install chrome
+      # - name: Install Chrome for puppeteer
+      #   run: pnpx puppeteer browsers install chrome
 
       - name: Take actual screenshots
-        run: npm run storycap
+        run: pnpm storybook:screenshot
 
       - name: Upload actual screenshots to artifact
         uses: actions/upload-artifact@v4
@@ -121,7 +120,7 @@ jobs:
         run: git checkout ${GITHUB_HEAD_REF#refs/heads/} || git checkout -b ${GITHUB_HEAD_REF#refs/heads/} && git pull
 
       - name: Compare Screenshots
-        run: npm run reg-suit
+        run: pnpm test:vrt
 
       - name: Deploy VRT report to github page
         uses: peaceiris/actions-gh-pages@v3
