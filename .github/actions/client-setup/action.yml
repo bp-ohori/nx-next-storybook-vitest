@@ -17,6 +17,9 @@ runs:
       uses: pnpm/action-setup@v4
       with:
         version: 9 # 任意のバージョンを指定可能
+        run_install: false
+        standalone: true
+        dest: ~/setup-pnpm
 
     # キャッシュされたnode_modulesを取得する
     - name: Restore node_modules Cache
