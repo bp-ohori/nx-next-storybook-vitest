@@ -5,6 +5,7 @@ runs:
   using: "composite"
   steps:
     - uses: actions/checkout@v4
+      shell: bash
 
     - name: Setup Node
       uses: actions/setup-node@v4
@@ -27,12 +28,6 @@ runs:
       with:
         version: 9
         run_install: false
-        standalone: true
-        dest: ~/setup-pnpm
-
-    # Add pnpm to PATH
-    - name: Add pnpm to PATH
-      run: echo "export PATH=~/setup-pnpm:$PATH" >> $GITHUB_ENV
 
     # Verify pnpm installation
     - name: Verify pnpm
