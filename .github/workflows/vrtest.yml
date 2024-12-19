@@ -128,7 +128,7 @@ jobs:
 
       - name: upload reg-suit
         uses: actions/upload-artifact@v4
-        id: vrt-result
+        id: artifact-upload-step
         with:
           name: visual regression test result
           path: .reg/
