@@ -115,17 +115,6 @@ jobs:
       - name: Compare Screenshots
         run: pnpm test:vrt
 
-      - name: Debug Check .reg directory
-        run: |
-          ls -la .reg
-          find .reg
-        shell: bash
-
-      # - name: Ensure .reg is not empty
-      #   run: |
-      #     mkdir -p .reg
-      #     touch .reg/.placeholder
-
       - name: upload reg-suit
         uses: actions/upload-artifact@v4
         id: vrt-result
@@ -141,5 +130,5 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             reg-suit report
-            ${{github.server_url}}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }}
+            [Download Link](${{github.server_url}}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }})
           edit-mode: replace
