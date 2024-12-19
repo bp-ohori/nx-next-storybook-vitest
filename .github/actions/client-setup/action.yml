@@ -14,16 +14,9 @@ runs:
 
     # Setup pnpm
     - name: Setup pnpm
-      uses: pnpm/action-setup@v2
+      uses: pnpm/action-setup@v4
       with:
         version: 9 # 任意のバージョンを指定可能
-
-    # Verify pnpm installation (任意で確認ステップを追加)
-    - name: Verify pnpm
-      run: |
-        which pnpm
-        pnpm --version
-      shell: bash
 
     # キャッシュされたnode_modulesを取得する
     - name: Restore node_modules Cache
