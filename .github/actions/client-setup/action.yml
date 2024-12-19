@@ -7,14 +7,9 @@ runs:
     - name: Setup Node
       uses: actions/setup-node@v4
       with:
-        node-version: 21
+        node-version: 20
         cache: "pnpm"
         cache-dependency-path: pnpm-lock.yaml
-
-    - uses: pnpm/action-setup@v2.2.2
-      with:
-        version: 9.15.0
-
     # キャッシュされたnode_modulesを取得する
     - name: Restore node_modules Cache
       id: node_modules_cache

@@ -1,4 +1,4 @@
-name: visual-regression-test
+name: new-visual-regression-test
 on:
   pull_request:
     branches:
@@ -6,231 +6,145 @@ on:
 defaults:
   run:
     shell: bash
+    # PRが作成・更新・再オープンされた場合にVRTを実行する。ただしci/**ブランチは無視する。
+    # これにより、機能開発ブランチや修正ブランチの変更をPR経由でメインブランチと比較し、
+    # 視覚的差分がないかを自動でチェックできる。
 
 jobs:
-  check_expected_screenshots:
+  new_take_expected_screenshots:
+    name: Take Expected Screenshots
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
-      - uses: volta-cli/action@v4
-      - uses: actions/checkout@v3
+      - name: Check out code
+        uses: actions/checkout@v4
         with:
-          ref: main
-          fetch-depth: 0
+          ref: main # mainブランチのスクショをVRTの正の画像とする
 
-      - name: restore cached expected screenshots
-        id: screenshots_cache
+      - name: Restore cached expected screenshots # キャッシュに保存されたスクショがあったら再利用する
+        id: expected_screenshots_cache
         uses: ./.github/actions/cache-screenshots
-        with:
-          lookup-only: 'true'
 
-      - name: restore cached node_modules
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        uses: ./.github/actions/cache-node-modules
+      - name: Client setup
+        if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
+        uses: ./.github/actions/client-setup
 
-      - name: cache storybook build result
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        id: storybook_result_cache
-        uses: ./.github/actions/cache-storybook-build-result
+      - name: Restore or build storybook # キャッシュにスクショが保存されてなかったらStorybookをビルドしてスクショ撮影する
+        if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
+        uses: ./.github/actions/cache-storybook-static
 
-      - name: storybook build
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' && steps.storybook_result_cache.outputs.cache-hit != 'true' }}
-        run: pnpm run storybook:build
-        env:
-          NEXT_IS_TEST: 'true'
+      - name: Install Chrome for puppeteer
+        if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
+        run: npx puppeteer browsers install chrome
 
-  take_expected_screenshots:
-    needs: check_expected_screenshots
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      matrix:
-        shard: [1/4, 2/4, 3/4, 4/4]
+      - name: Take expected screenshots
+        if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
+        run: npm run storycap
 
-    steps:
-      - uses: volta-cli/action@v4
-      - uses: actions/checkout@v3
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: restore cached expected screenshots
-        id: screenshots_cache
-        uses: ./.github/actions/cache-screenshots
-        with:
-          lookup-only: 'false'
-
-      - name: restore cached node_modules
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        uses: ./.github/actions/cache-node-modules
-
-      - name: cache storybook build result
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        id: storybook_result_cache
-        uses: ./.github/actions/cache-storybook-build-result
-
-      - name: take screenshots
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        run: pnpm run storybook:screenshot --shard=${{ matrix.shard }}
-
-      - name: upload screenshots
-        uses: actions/upload-artifact@v3
+      - name: Upload expected screenshots to artifact # 他のstepでスクショを使うのでartifactにアップする
+        uses: actions/upload-artifact@v4
         with:
           name: expected-screenshots
           path: __screenshots__
           retention-days: 1
 
-  check_actual_screenshots:
+  new_take_actual_screenshots:
+    name: Take Actual Screenshots
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: volta-cli/action@v4
-      - uses: actions/checkout@v3
+      - name: Check out code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: workaround for detached HEAD
+      - name: Client setup
+        uses: ./.github/actions/client-setup
+
+      - name: Workaround for detached HEAD
         run: |
           git checkout ${GITHUB_HEAD_REF#refs/heads/} || git checkout -b ${GITHUB_HEAD_REF#refs/heads/} && git pull
 
-      - name: restore cached actual screenshots
-        id: screenshots_cache
-        uses: ./.github/actions/cache-screenshots
-        with:
-          lookup-only: 'true'
+      - name: Build Storybook
+        run: npm run build-storybook
 
-      - name: restore cached node_modules
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        uses: ./.github/actions/cache-node-modules
+      - name: Install Chrome for puppeteer
+        run: npx puppeteer browsers install chrome
 
-      - name: cache storybook build result
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        id: storybook_result_cache
-        uses: ./.github/actions/cache-storybook-build-result
+      - name: Take actual screenshots
+        run: npm run storycap
 
-      - name: storybook build
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' && steps.storybook_result_cache.outputs.cache-hit != 'true' }}
-        run: pnpm run storybook:build
-        env:
-          NEXT_IS_TEST: 'true'
-
-  take_actual_screenshots:
-    needs: check_actual_screenshots
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      matrix:
-        shard: [1/4, 2/4, 3/4, 4/4]
-
-    steps:
-      - uses: volta-cli/action@v4
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: workaround for detached HEAD
-        run: |
-          git checkout ${GITHUB_HEAD_REF#refs/heads/} || git checkout -b ${GITHUB_HEAD_REF#refs/heads/} && git pull
-
-      - name: restore cached actual screenshots
-        id: screenshots_cache
-        uses: ./.github/actions/cache-screenshots
-        with:
-          lookup-only: 'false'
-
-      - name: restore cached node_modules
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        uses: ./.github/actions/cache-node-modules
-
-      - name: cache storybook build result
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        id: storybook_result_cache
-        uses: ./.github/actions/cache-storybook-build-result
-
-      - name: take screenshots
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        run: pnpm run storybook:screenshot --shard=${{ matrix.shard }}
-
-      - name: upload screenshots
-        uses: actions/upload-artifact@v3
+      - name: Upload actual screenshots to artifact
+        uses: actions/upload-artifact@v4
         with:
           name: actual-screenshots
           path: __screenshots__
           retention-days: 1
 
-  run_reg_suit:
+  new_compare_screenshots:
+    name: Compare Screenshots
     needs:
       - take_expected_screenshots
       - take_actual_screenshots
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
-      - uses: volta-cli/action@v4
-      - uses: actions/checkout@v3
+      - name: Check out code
+        if: ${{ github.event_name != 'pull_request_target' }}
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: restore cached expected screenshots
-        id: screenshots_cache
-        uses: ./.github/actions/cache-screenshots
+      - name: Check out PR
+        if: ${{ github.event_name == 'pull_request_target' }}
+        uses: actions/checkout@v4
         with:
-          lookup-only: 'false'
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
 
-      - name: download expected screenshots
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        uses: actions/download-artifact@v3
+      - name: Client setup
+        uses: ./.github/actions/client-setup
+
+      - name: Download expected screenshots from artifact
+        uses: actions/download-artifact@v4
         with:
           name: expected-screenshots
-          path: __screenshots__
+          path: .reg/expected/
 
-      - name: set reg-suit expected
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        run: |
-          rm -rf .reg/expected/
-          mkdir -p .reg/expected
-          mv -f __screenshots__/* .reg/expected/
-          ls -l .reg/
-
-      - name: download actual screenshots
-        uses: actions/download-artifact@v3
+      - name: Download actual screenshots from artifact
+        uses: actions/download-artifact@v4
         with:
           name: actual-screenshots
           path: __screenshots__
 
-      - name: restore cached node_modules
-        if: ${{ steps.screenshots_cache.outputs.cache-hit != 'true' }}
-        uses: ./.github/actions/cache-node-modules
+      - name: Workaround for detached HEAD
+        run: git checkout ${GITHUB_HEAD_REF#refs/heads/} || git checkout -b ${GITHUB_HEAD_REF#refs/heads/} && git pull
 
-      - name: workaround for detached HEAD
-        run: |
-          git checkout ${GITHUB_HEAD_REF#refs/heads/} || git checkout -b ${GITHUB_HEAD_REF#refs/heads/} && git pull
+      - name: Compare Screenshots
+        run: npm run reg-suit
 
-      - name: run reg-suit
-        run: pnpm run test:vrt
-
-      - name: deploy report to github page
+      - name: Deploy VRT report to github page
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .reg/
-          destination_dir: ${{ github.head_ref  }}
+          destination_dir: ${{ github.head_ref }}/vrt-report
 
-      - name: find comment
-        uses: peter-evans/find-comment@v2
-        id: fc
+      - name: Find comment
+        uses: peter-evans/find-comment@v3
+        id: find_comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
-          body-includes: reg-suit report
-
-      - name: upsert comment
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          comment-id: ${{ steps.fc.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
           body: |
             reg-suit report
-            https://bp-ohori.github.io/nx-next-storybook-vitest/${{github.head_ref}}
-          edit-mode: replace
+
+      # - name: Comment VRT report URL
+      #   uses: peter-evans/create-or-update-comment@v4
+      #   with:
+      #     comment-id: ${{ steps.find_comment.outputs.comment-id }}
+      #     issue-number: ${{ github.event.pull_request.number }}
+      #     body: |
+      #       reg-suit report
+      #       https://bp-ohori.github.io/nx-next-storybook-vitest/${{github.head_ref}}/vrt-report
+      #     edit-mode: replace

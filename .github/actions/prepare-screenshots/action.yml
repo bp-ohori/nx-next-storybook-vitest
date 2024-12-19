@@ -1,8 +1,0 @@
-name: 'prepare for screenshots'
-description: 'prepare for screenshots'
-runs:
-  using: 'composite'
-  steps:
-    - name: download chromium
-      run: yarn download:chromium
-      shell: bash
