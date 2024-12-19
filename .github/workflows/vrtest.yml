@@ -130,6 +130,5 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             reg-suit report
-            ${{ steps.artifact-upload-step.outputs.artifact-url }}
-            [Download Link](${{github.server_url}}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }})
+            [Download](${{github.server_url}}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }})
           edit-mode: replace
