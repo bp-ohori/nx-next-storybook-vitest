@@ -4,17 +4,15 @@ description: "FEのCIの各Jobに必要なセットアップ処理をまとめ�
 runs:
   using: "composite"
   steps:
+    - uses: actions/checkout@v4
+    - run: corepack enable
+      shell: bash
     - name: Setup Node
       uses: actions/setup-node@v4
       with:
         node-version: 20
         cache: "pnpm"
         cache-dependency-path: pnpm-lock.yaml
-
-    # Enable pnpm using corepack
-    - name: Enable pnpm with corepack
-      run: corepack enable pnpm
-      shell: bash
 
     # キャッシュされたnode_modulesを取得する
     - name: Restore node_modules Cache
