@@ -32,10 +32,6 @@ jobs:
         if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
         uses: ./.github/actions/cache-storybook-static
 
-      # - name: Install Chrome for puppeteer
-      #   if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
-      #   run: npx puppeteer browsers install chrome
-
       - name: Take expected screenshots
         if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
         run: pnpm storybook:screenshot
@@ -66,9 +62,6 @@ jobs:
 
       - name: Build Storybook
         run: pnpm storybook:build
-
-      # - name: Install Chrome for puppeteer
-      #   run: pnpx puppeteer browsers install chrome
 
       - name: Take actual screenshots
         run: pnpm storybook:screenshot
@@ -129,21 +122,21 @@ jobs:
           publish_dir: .reg/
           destination_dir: ${{ github.head_ref }}/vrt-report
 
-      - name: Find comment
-        uses: peter-evans/find-comment@v3
-        id: find_comment
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: "github-actions[bot]"
-          body: |
-            reg-suit report
-
-      # - name: Comment VRT report URL
-      #   uses: peter-evans/create-or-update-comment@v4
+      # - name: Find comment
+      #   uses: peter-evans/find-comment@v3
+      #   id: find_comment
       #   with:
-      #     comment-id: ${{ steps.find_comment.outputs.comment-id }}
       #     issue-number: ${{ github.event.pull_request.number }}
+      #     comment-author: "github-actions[bot]"
       #     body: |
       #       reg-suit report
-      #       https://bp-ohori.github.io/nx-next-storybook-vitest/${{github.head_ref}}/vrt-report
-      #     edit-mode: replace
+
+      - name: Comment VRT report URL
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find_comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+             reg-suit report
+             https://bp-ohori.github.io/nx-next-storybook-vitest/${{github.head_ref}}/vrt-report
+             edit-mode: replace
