@@ -132,6 +132,7 @@ jobs:
         with:
           name: visual regression test result
           path: .reg/
+          include-hidden-files: true
 
       - name: Comment VRT report URL
         uses: peter-evans/create-or-update-comment@v4
