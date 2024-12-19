@@ -115,6 +115,17 @@ jobs:
       - name: Compare Screenshots
         run: pnpm test:vrt
 
+      - name: Debug Check .reg directory
+        run: |
+          ls -la .reg
+          find .reg
+        shell: bash
+
+      # - name: Ensure .reg is not empty
+      #   run: |
+      #     mkdir -p .reg
+      #     touch .reg/.placeholder
+
       - name: upload reg-suit
         uses: actions/upload-artifact@v4
         id: ${{github.head_ref}}
