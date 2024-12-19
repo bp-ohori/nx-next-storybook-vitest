@@ -1,4 +1,4 @@
-name: new-visual-regression-test
+name: visual-regression-test
 on:
   pull_request:
     branches:
@@ -11,7 +11,7 @@ defaults:
     # 視覚的差分がないかを自動でチェックできる。
 
 jobs:
-  new_take_expected_screenshots:
+  take_expected_screenshots:
     name: Take Expected Screenshots
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -48,7 +48,7 @@ jobs:
           path: __screenshots__
           retention-days: 1
 
-  new_take_actual_screenshots:
+  take_actual_screenshots:
     name: Take Actual Screenshots
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -81,7 +81,7 @@ jobs:
           path: __screenshots__
           retention-days: 1
 
-  new_compare_screenshots:
+  compare_screenshots:
     name: Compare Screenshots
     needs:
       - take_expected_screenshots
