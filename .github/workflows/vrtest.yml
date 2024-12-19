@@ -117,7 +117,6 @@ jobs:
 
       - name: upload reg-suit
         uses: actions/upload-artifact@v4
-        id: ${{github.head_ref}}
         with:
           name: visual regression test result
           path: .reg/
@@ -129,5 +128,6 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             reg-suit report
-            ${{github.server_url}}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{github.head_ref}}
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            ${{github.server_url}}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           edit-mode: replace
