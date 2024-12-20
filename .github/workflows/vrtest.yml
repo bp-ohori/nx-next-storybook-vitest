@@ -145,7 +145,7 @@ jobs:
             console.log(json);
 
             const titleIcon = '✅';
-            const easyVrtComment = '<!-- Easy VRT Comment -->';
+            const vrtComment = '<!-- Vrt Comment -->';
 
             const stats = {
               changed: json.failedItems.length.toString(),
@@ -155,7 +155,7 @@ jobs:
             };
 
             const markdown = await core.summary
-              .addHeading(`${titleIcon} Easy VRT has checked for visual changes`, 3)
+              .addHeading(`${titleIcon} VRT has checked for visual changes`, 3)
               .addTable([
                 ["🔴 Changed", "🟡 New", "🟤 Deleted", "🔵 Passing"],
                 [stats.changed, stats.newItems, stats.deleted, stats.passing]
@@ -165,8 +165,34 @@ jobs:
               .addRaw(`${easyVrtComment}`)
               .stringify()
 
-            const result = await core.summary.write()
-            console.log(result)
+            const requestPerPage = 100;
+            try {
+              const listComments = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                per_page: requestPerPage
+              });
+              const vrtCommentList = listComments.data.find(comment => comment.body.includes(vrtComment));
+              if (vrtCommentList) {
+                // delete summary comment if exists
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: vrtCommentList.id
+                });
+              }
+              // create a comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: markdown
+              });
+            } catch (error) {
+              core.error(`Failed to modify comment: ${error.message}`);
+              return;
+            }
 
       # - name: Comment VRT report URL
       #   uses: peter-evans/create-or-update-comment@v4
