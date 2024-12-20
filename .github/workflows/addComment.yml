@@ -17,7 +17,7 @@ jobs:
       - name: Add comment to PR
         uses: peter-evans/create-or-update-comment@v3
         with:
-          token: ${{ secrets.PAT_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             🎉 Thank you for opening this PR!  
