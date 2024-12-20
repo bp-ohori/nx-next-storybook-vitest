@@ -157,7 +157,7 @@ jobs:
             const markdown = await core.summary
               .addHeading(`${titleIcon} Easy VRT has checked for visual changes`, 3)
               .addTable([
-                ["🔴 Changed",  "🟡 New",        "🟤  Deleted",  "🔵 Passing"],
+                ["🔴 Changed", "🟡 New", "🟤 Deleted", "🔵 Passing"],
                 [stats.changed, stats.newItems, stats.deleted, stats.passing]
               ])
               .addHeading("📊 Download Report", 3)
@@ -165,7 +165,8 @@ jobs:
               .addRaw(`${easyVrtComment}`)
               .stringify()
 
-            await core.summary.write()
+            const result = await core.summary.write()
+            console.log(result)
 
       # - name: Comment VRT report URL
       #   uses: peter-evans/create-or-update-comment@v4
