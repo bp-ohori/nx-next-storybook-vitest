@@ -129,17 +129,54 @@ jobs:
           name: visual regression test result
           path: .reg/
           include-hidden-files: true
-
-      - name: Comment VRT report URL
-        uses: peter-evans/create-or-update-comment@v4
+      
+      - name: Add comment
+        uses: actions/github-script
+        env:
+          ARTIFACT_URL: ${{ steps.artifact-upload-step.outputs.artifact-url }}
         with:
-          comment-id: ${{ steps.find_comment.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            reg-suit report
-            https://bp-ohori.github.io/nx-next-storybook-vitest/${{github.head_ref}}/vrt-report
-            [Download](${{github.server_url}}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }})
-          edit-mode: replace
+          script: |
+            const fs = require('fs');
+            const artifactUrl = process.env.ARTIFACT_URL;
+
+            const log = fs.readFileSync('.reg/out.json', 'utf-8');
+            console.log(log);
+            const json = JSON.parse(log);
+            console.log(json);
+
+            const titleIcon = '✅';
+            const easyVrtComment = '<!-- Easy VRT Comment -->';
+
+            const stats = {
+              changed: json.failedItems.length.toString(),
+              newItems: json.newItems.length.toString(),
+              deleted: json.deletedItems.length.toString(),
+              passing: json.passedItems.length.toString()
+            };
+
+            const markdown = await core.summary
+              .addHeading(`${titleIcon} Easy VRT has checked for visual changes`, 3)
+              .addTable([
+                ["🔴 Changed",  "🟡 New",        "🟤  Deleted",  "🔵 Passing"],
+                [stats.changed, stats.newItems, stats.deleted, stats.passing]
+              ])
+              .addHeading("📊 Download Report", 3)
+              .addLink('You can download the entire report here', `${artifactUrl}`)
+              .addRaw(`${easyVrtComment}`)
+              .stringify()
+
+            await core.summary.write()
+
+      # - name: Comment VRT report URL
+      #   uses: peter-evans/create-or-update-comment@v4
+      #   with:
+      #     comment-id: ${{ steps.find_comment.outputs.comment-id }}
+      #     issue-number: ${{ github.event.pull_request.number }}
+      #     body: |
+      #       reg-suit report
+      #       https://bp-ohori.github.io/nx-next-storybook-vitest/${{github.head_ref}}/vrt-report
+      #       [Download](${{github.server_url}}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }})
+      #     edit-mode: replace
 
       # - name: Deploy VRT report to github page
       #   uses: peaceiris/actions-gh-pages@v3
