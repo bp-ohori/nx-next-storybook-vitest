@@ -115,6 +115,13 @@ jobs:
       - name: Compare Screenshots
         run: pnpm test:vrt
 
+      - name: Deploy VRT report to github page
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .reg/
+          destination_dir: ${{ github.head_ref }}/vrt-report
+
       - name: upload reg-suit
         uses: actions/upload-artifact@v4
         id: artifact-upload-step
@@ -130,5 +137,23 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             reg-suit report
+            https://bp-ohori.github.io/nx-next-storybook-vitest/${{github.head_ref}}/vrt-report
             [Download](${{github.server_url}}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }})
           edit-mode: replace
+
+      # - name: Deploy VRT report to github page
+      #   uses: peaceiris/actions-gh-pages@v3
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     publish_dir: .reg/
+      #     destination_dir: ${{ github.head_ref }}/vrt-report
+
+      # - name: Comment VRT report URL
+      #   uses: peter-evans/create-or-update-comment@v4
+      #   with:
+      #     comment-id: ${{ steps.find_comment.outputs.comment-id }}
+      #     issue-number: ${{ github.event.pull_request.number }}
+      #     body: |
+      #       reg-suit report
+      #       https://bp-ohori.github.io/nx-next-storybook-vitest/${{github.head_ref}}/vrt-report
+      #     edit-mode: replace
