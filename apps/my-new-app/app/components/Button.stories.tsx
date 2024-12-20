@@ -12,7 +12,7 @@ type Story = StoryObj<typeof Button>;
 export const Primary: Story = {
     args : {
         primary: true,
-        label: 'XXXXXXXXButton'
+        label: 'Button'
     },
 }
 
@@ -41,6 +41,6 @@ export const Small: Story = {
 export const LongText: Story = {
     args :{
     size: 'small',
-    label: 'ButtonButtonButtonButtonButtonButton',
+    label: 'Button',
     },
 };
