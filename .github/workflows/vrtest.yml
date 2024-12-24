@@ -161,6 +161,8 @@ jobs:
               | ${changeItemCount} | ${newItemCount} | ${deletedItemCount} | ${passedItemCount} |
 
               [レポート](https://${context.repo.owner}.github.io/${context.repo.repo}/${headRef}/vrt-report/index.html)を確認してください。
+
+              ${regTestComment}
               `;
 
             const requestPerPage = 100;
