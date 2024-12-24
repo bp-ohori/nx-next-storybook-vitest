@@ -151,6 +151,8 @@ jobs:
             const deletedItemCount = json.deletedItems.length.toString();
             const passedItemCount = json.passedItems.length.toString();
 
+            const regTestComment = '<!-- reg test comment -->'
+
             const markdown = `
               ### reg-suit has checked for visual changes
 
@@ -169,13 +171,13 @@ jobs:
                 issue_number: context.issue.number,
                 per_page: requestPerPage
               });
-              const vrtCommentList = listComments.data.find(comment => comment.body.includes(vrtComment));
-              if (vrtCommentList) {
+              const regCommentList = listComments.data.find(comment => comment.body.includes(regTestComment));
+              if (regCommentList) {
                 // delete summary comment if exists
                 await github.rest.issues.deleteComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  comment_id: vrtCommentList.id
+                  comment_id: regCommentList.id
                 });
               }
               // create a comment
