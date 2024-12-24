@@ -144,24 +144,19 @@ jobs:
             const json = JSON.parse(log);
             console.log(json);
 
-            const titleIcon = '✅';
-            const vrtComment = '<!-- Vrt Comment -->';
+            const vrtComment = '[レポート](https://${context.repo.owner}.github.io/${context.repo.repo}/${{github.head_ref}}/vrt-report/index.html)を確認してください。';
 
-            const stats = {
-              changed: json.failedItems.length.toString(),
-              newItems: json.newItems.length.toString(),
-              deleted: json.deletedItems.length.toString(),
-              passing: json.passedItems.length.toString()
-            };
+            const changeItemCount = json.failedItems.length.toString();
+            const newItemCount = json.newItems.length.toString();
+            const deletedItemCount = json.deletedItems.length.toString();
+            const passedItemCount = json.passedItems.length.toString();
 
             const markdown = await core.summary
-              .addHeading(`${titleIcon} VRT has checked for visual changes`, 3)
+              .addHeading(`reg-suit has checked for visual changes`, 3)
               .addTable([
-                ["🔴 Changed", "🟡 New", "🟤 Deleted", "🔵 Passing"],
-                [stats.changed, stats.newItems, stats.deleted, stats.passing]
+                [":red_circle Changed", ":white_circle New", ":black_circle Deleted", ":large_blue_circle Passing"],
+                [changeItemCount, newItemCount, deletedItemCount, passedItemCount]
               ])
-              .addHeading("📊 Download Report", 3)
-              .addLink('You can download the entire report here', `${artifactUrl}`)
               .addRaw(`${vrtComment}`)
               .stringify()
 

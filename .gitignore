@@ -46,4 +46,6 @@ Thumbs.db
 out
 
 
-storybook-static.reg
+storybook-static
+.reg
+__screenshots__

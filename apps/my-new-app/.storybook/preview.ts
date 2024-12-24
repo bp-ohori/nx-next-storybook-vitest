@@ -1,10 +1,13 @@
+import {Preview} from '@storybook/react'
 import { withScreenshot } from 'storycap';
 
-export const decorators = [
-  withScreenshot, // Registration the decorator is required
+const preview: Preview = {}
+
+preview.decorators = [
+  withScreenshot(), // Registration the decorator is required
 ];
 
-export const parameters = {
+preview.parameters = {
   screenshot: {
     viewports: {
       LARGE: {
@@ -15,4 +18,6 @@ export const parameters = {
   },
 };
 
-export const tags = ["autodocs"];
+preview.tags = ["autodocs"];
+
+export default preview
