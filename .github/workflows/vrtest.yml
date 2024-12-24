@@ -156,7 +156,7 @@ jobs:
             const markdown = `
               ### reg-suit has checked for visual changes
 
-              | 🔴 Changed | ⚪️ New | ⚫️ Deleted | 🔵 Passing |
+              | 🔴 Changed | 🟡 New | 🟣 Deleted | 🔵 Passing |
               |------------|---------|-----------|------------|
               | ${changeItemCount} | ${newItemCount} | ${deletedItemCount} | ${passedItemCount} |
 
