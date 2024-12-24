@@ -173,6 +173,7 @@ jobs:
                 issue_number: context.issue.number,
                 per_page: requestPerPage
               });
+              console.log(listComments.data);
               const regCommentList = listComments.data.find(comment => comment.body.includes(regTestComment));
               if (regCommentList) {
                 // delete summary comment if exists
