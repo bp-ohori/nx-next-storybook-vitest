@@ -134,31 +134,32 @@ jobs:
         uses: actions/github-script@v7
         env:
           ARTIFACT_URL: ${{ steps.artifact-upload-step.outputs.artifact-url }}
+          HEAD_REF: ${{ github.head_ref }}
         with:
           script: |
             const fs = require('fs');
             const artifactUrl = process.env.ARTIFACT_URL;
+            const headRef = process.env.HEAD_REF
 
             const log = fs.readFileSync('.reg/out.json', 'utf-8');
             console.log(log);
             const json = JSON.parse(log);
             console.log(json);
 
-            const vrtComment = '[レポート](https://${context.repo.owner}.github.io/${context.repo.repo}/${{github.head_ref}}/vrt-report/index.html)を確認してください。';
-
             const changeItemCount = json.failedItems.length.toString();
             const newItemCount = json.newItems.length.toString();
             const deletedItemCount = json.deletedItems.length.toString();
             const passedItemCount = json.passedItems.length.toString();
 
-            const markdown = await core.summary
-              .addHeading(`reg-suit has checked for visual changes`, 3)
-              .addTable([
-                [":red_circle Changed", ":white_circle New", ":black_circle Deleted", ":large_blue_circle Passing"],
-                [changeItemCount, newItemCount, deletedItemCount, passedItemCount]
-              ])
-              .addRaw(`${vrtComment}`)
-              .stringify()
+            const markdown = `
+              ### reg-suit has checked for visual changes
+
+              | 🔴 Changed | ⚪️ New | ⚫️ Deleted | 🔵 Passing |
+              |------------|---------|-----------|------------|
+              | ${changeItemCount} | ${newItemCount} | ${deletedItemCount} | ${passedItemCount} |
+
+              [レポート](https://${context.repo.owner}.github.io/${context.repo.repo}/${headRef}/vrt-report/index.html)を確認してください。
+              `;
 
             const requestPerPage = 100;
             try {
