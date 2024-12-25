@@ -24,6 +24,9 @@ jobs:
         id: expected_screenshots_cache
         uses: ./.github/actions/cache-screenshots
 
+      - name: Debug cache hit
+        run: echo "Cache hit： ${{ steps.expected_screenshots_cache.outputs.cache-hit }}"
+
       - name: Client setup
         if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
         uses: ./.github/actions/client-setup
@@ -31,7 +34,7 @@ jobs:
       - name: Restore or build storybook # キャッシュにスクショが保存されてなかったらStorybookをビルドしてスクショ撮影する
         if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
         uses: ./.github/actions/cache-storybook-static
-
+      
       - name: Take expected screenshots
         if: ${{ steps.expected_screenshots_cache.outputs.cache-hit != 'true'}}
         run: pnpm storybook:screenshot
