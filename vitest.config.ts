@@ -18,6 +18,15 @@ export default defineConfig({
       name: 'chromium',
       provider: 'playwright',
     },
+    coverage: {
+      // all: false,
+      reporter: ['text'],
+      include: ['apps/my-new-app/app/**/*.ts', 'apps/my-new-app/app/**/*.tsx'], // app 配下のみを対象
+      exclude: [
+        'apps/my-new-app/app/**/*.stories.tsx', // stories を除外
+        'apps/my-new-app/app/**/*.test.tsx', // テストファイルを除外
+      ],
+    },
     // Make sure to adjust this pattern to match your stories files.
     include: ['**/*.stories.?(m)[jt]s?(x)'],
     setupFiles: ['apps/my-new-app/.storybook/vitest.setup.ts'],

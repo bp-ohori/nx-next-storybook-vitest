@@ -6,7 +6,9 @@
     "storybook:build": "storybook build --config-dir apps/my-new-app/.storybook",
     "storybook:dev": "storybook dev -p 6006 --config-dir apps/my-new-app/.storybook",
     "storybook:screenshot": "storycap http://localhost:6006 --serverTimeout 60000 --captureTimeout 10000 --serverCmd 'pnpm storybook:dev'",
-    "test:vrt": "reg-suit run"
+    "test:vrt": "reg-suit run",
+    "vitest": "vitest",
+    "vitest:coverage": "vitest run --coverage"
   },
   "private": true,
   "dependencies": {
@@ -44,7 +46,7 @@
     "@types/react": "18.3.1",
     "@types/react-dom": "18.3.0",
     "@vitest/browser": "^2.1.8",
-    "@vitest/coverage-v8": "2.1.8",
+    "@vitest/coverage-v8": "2.2.0-beta.2",
     "autoprefixer": "10.4.13",
     "babel-jest": "^29.7.0",
     "eslint": "^9.8.0",
@@ -70,6 +72,6 @@
     "tslib": "^2.3.0",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.13.0",
-    "vitest": "^2.1.8"
+    "vitest": "2.2.0-beta.2"
   }
 }
