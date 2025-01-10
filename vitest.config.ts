@@ -20,7 +20,7 @@ export default defineConfig({
     },
     coverage: {
       // all: false,
-      reporter: ['text', 'lcov'],
+      reporter: ['lcov'],
       include: [
         'apps/my-new-app/app/**/*.ts',
         'apps/my-new-app/app/**/*.tsx',
