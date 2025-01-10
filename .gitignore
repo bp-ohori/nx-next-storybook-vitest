@@ -49,3 +49,5 @@ out
 storybook-static
 .reg
 __screenshots__
+
+vite.config.*.timestamp*

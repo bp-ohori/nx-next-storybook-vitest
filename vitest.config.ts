@@ -21,7 +21,12 @@ export default defineConfig({
     coverage: {
       // all: false,
       reporter: ['text', 'lcov'],
-      include: ['apps/my-new-app/app/**/*.ts', 'apps/my-new-app/app/**/*.tsx'], // app 配下のみを対象
+      include: [
+        'apps/my-new-app/app/**/*.ts',
+        'apps/my-new-app/app/**/*.tsx',
+        'libs/src/**/*.js',
+        'libs/src/**/*.ts',
+      ], // app 配下のみを対象
       exclude: [
         'apps/my-new-app/app/**/*.stories.tsx', // stories を除外
         'apps/my-new-app/app/**/*.test.tsx', // テストファイルを除外
