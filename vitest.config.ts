@@ -20,7 +20,7 @@ export default defineConfig({
     },
     coverage: {
       // all: false,
-      reporter: ['text'],
+      reporter: ['text', 'lcov'],
       include: ['apps/my-new-app/app/**/*.ts', 'apps/my-new-app/app/**/*.tsx'], // app 配下のみを対象
       exclude: [
         'apps/my-new-app/app/**/*.stories.tsx', // stories を除外
