@@ -18,8 +18,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Client setup
-        uses: ./.github/actions/client-setup
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+      - uses: nrwl/nx-set-shas@v4
+
+      - run: pnpm exec playwright install
 
       - run: pnpm exec playwright install
 
